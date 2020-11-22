@@ -45,12 +45,17 @@ const commands = {
     name: "HELP",
     requireParam: false,
     desc: "send helpful information to the client",
+    invoke: (socket) => {
+      socket.write(showCommands());
+    },
   },
   QUIT: {
     name: "QUIT",
     requireParam: false,
     desc: "close the connection and stop the program",
-    action: () => {},
+    invoke: (socket) => {
+      socket.end("Goodbye and see you soon. \r\n");
+    },
   },
 };
 
@@ -70,14 +75,21 @@ const createServer = (port) => {
         if (command.requireParam) {
           //? Check a parameter is defined
           if (!params) {
-            console.log("Parameter is requred");
+            socket.write(`Parameter is requred to ${comm} <param>`);
             return;
           }
         }
-        console.log("Good");
+        //? Invoke a command action
+        command.invoke(socket, params);
       } else {
-        console.log("Error");
+        socket.write(
+          "Order not found, use HELP to display all commands available\r\n"
+        );
       }
+    });
+
+    socket.on("end", () => {
+      console.log("Client left");
     });
   });
 
@@ -89,10 +101,13 @@ const createServer = (port) => {
 
 //? Display all available commands
 const showCommands = () => {
-  let message = "";
+  let message =
+    "=============================== COMMANDS AVAILABLE ===============================\n";
   Object.values(commands).forEach((command) => {
     message += `${command.name}: ${command.desc}\n`;
   });
+  message +=
+    "==================================================================================\n\r";
   return message;
 };
 
