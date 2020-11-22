@@ -23,10 +23,7 @@ const Auth = {
   login: (username, password) => {
     const user = Query.selectUser(username);
     if (user) {
-      return {
-        username,
-        status: user.password === password,
-      };
+      return user.password === password;
     }
     return false;
   },
@@ -61,6 +58,7 @@ const commands = {
       const username = param.trim();
       if (Query.checkUserExist(username)) {
         session.username = username;
+        session.isConnected = false;
         socket.write("200 successful identification\r\n");
       } else {
         socket.write("532 Need account for login\r\n");
@@ -72,6 +70,20 @@ const commands = {
     requireParam: true,
     connRequired: false,
     desc: "<password>: authenticate the user with a password",
+    invoke: (socket, param, session) => {
+      const password = param.trim();
+      if (!session.username) {
+        socket.write("401 Please identify your account before logging in\r\n");
+      } else {
+        if (Auth.login(session.username, password)) {
+          session.isConnected = true;
+          socket.write("200 Successfuly connected\r\n");
+        } else {
+          session.isConnected = false;
+          socket.write("403 Access denied, the password is incorrect\r\n");
+        }
+      }
+    },
   },
   LIST: {
     name: "LIST",
