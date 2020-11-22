@@ -54,6 +54,24 @@ const commands = {
   },
 };
 
+//?Create server
+const createServer = (port) => {
+  const server = net.createServer((socket) => {
+    console.log("New connection");
+    socket.write("Hello from server\r\n");
+
+    socket.on("data", (data) => {
+      const [comm, params] = data.toString().split(" ");
+      console.log(comm);
+    });
+  });
+
+  //? Start a server
+  server.listen(port, () => {
+    console.log(`Server started at port ${port}`);
+  });
+};
+
 //? Display all available commands
 const showCommands = () => {
   let message = "";
@@ -62,4 +80,6 @@ const showCommands = () => {
   });
   return message;
 };
-console.log(showCommands());
+
+//? Create and run a Server
+createServer(process.argv[2]);
