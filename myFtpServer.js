@@ -18,6 +18,20 @@ const Query = ((database) => {
   };
 })(JSON.parse(fs.readFileSync("./config/db.json")));
 
+//? Create authentification auth
+const Auth = {
+  login: (username, password) => {
+    const user = Query.selectUser(username);
+    if (user && user.password === password) {
+      return {
+        username,
+        status: true,
+      };
+    }
+    return false;
+  },
+};
+
 //? Define all available commands
 const commands = {
   USER: {
@@ -132,7 +146,7 @@ const showCommands = () => {
   return message;
 };
 
-console.log(Query.checkUserExist("anonymous"));
+console.log(Auth.login("anonymous", "anonymous"));
 
 exit(20);
 
