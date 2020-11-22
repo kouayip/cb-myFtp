@@ -57,8 +57,14 @@ const commands = {
     requireParam: true,
     connRequired: false,
     desc: "<username>: check if the user exist",
-    invoke: (socket, param) => {
-      console.log(param);
+    invoke: (socket, param, session) => {
+      const username = param.trim();
+      if (Query.checkUserExist(username)) {
+        session.username = username;
+        socket.write("200 successful identification\r\n");
+      } else {
+        socket.write("532 Need account for login\r\n");
+      }
     },
   },
   PASS: {
@@ -127,7 +133,6 @@ const createServer = (port) => {
     socket.write("Hello from server\r\n");
 
     socket.on("data", (data) => {
-      console.log(Session.get(socket.sessionId)); //! Test
       const [comm, params] = data.toString().split(" ");
       const command = commands[comm.trim()];
 
@@ -157,7 +162,7 @@ const createServer = (port) => {
           }
         }
         //? Invoke a command action
-        command.invoke(socket, params.trim());
+        command.invoke(socket, params, userSession);
       } else {
         socket.write(
           "Order not found, use HELP to display all commands available\r\n"
