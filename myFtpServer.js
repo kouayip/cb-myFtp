@@ -62,7 +62,12 @@ const createServer = (port) => {
 
     socket.on("data", (data) => {
       const [comm, params] = data.toString().split(" ");
-      console.log(comm);
+      const command = commands[comm.trim()];
+      if (command) {
+        console.log(comm);
+      } else {
+        console.log("Error");
+      }
     });
   });
 
