@@ -63,8 +63,18 @@ const createServer = (port) => {
     socket.on("data", (data) => {
       const [comm, params] = data.toString().split(" ");
       const command = commands[comm.trim()];
+
+      //? Check a command existe
       if (command) {
-        console.log(comm);
+        //? Check a command required parameter
+        if (command.requireParam) {
+          //? Check a parameter is defined
+          if (!params) {
+            console.log("Parameter is requred");
+            return;
+          }
+        }
+        console.log("Good");
       } else {
         console.log("Error");
       }
