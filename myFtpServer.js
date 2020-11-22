@@ -1,6 +1,22 @@
 //? Defined <port>
 
 const net = require("net");
+const fs = require("fs");
+const { exit } = require("process");
+
+//? Create Database Instance
+const Query = ((database) => {
+  return {
+    selectUser: function (username) {
+      return database.find((account) => {
+        return account.username === username;
+      });
+    },
+    checkUserExist: function (username) {
+      return this.selectUser(username) !== undefined;
+    },
+  };
+})(JSON.parse(fs.readFileSync("./config/db.json")));
 
 //? Define all available commands
 const commands = {
@@ -8,6 +24,9 @@ const commands = {
     name: "USER",
     requireParam: true,
     desc: "<username>: check if the user exist",
+    invoke: (socket, param) => {
+      console.log(param);
+    },
   },
   PASS: {
     name: "PASS",
@@ -69,18 +88,20 @@ const createServer = (port) => {
       const [comm, params] = data.toString().split(" ");
       const command = commands[comm.trim()];
 
-      //? Check a command existe
+      //? Check a command exists
       if (command) {
         //? Check a command required parameter
         if (command.requireParam) {
           //? Check a parameter is defined
           if (!params) {
-            socket.write(`Parameter is requred to ${comm} <param>`);
+            socket.write(
+              `The ${comm.trim()} command is not valid, it requires a parameter\r\n`
+            );
             return;
           }
         }
         //? Invoke a command action
-        command.invoke(socket, params);
+        command.invoke(socket, params.trim());
       } else {
         socket.write(
           "Order not found, use HELP to display all commands available\r\n"
@@ -110,6 +131,10 @@ const showCommands = () => {
     "==================================================================================\n\r";
   return message;
 };
+
+console.log(Query.checkUserExist("anonymous"));
+
+exit(20);
 
 //? Create and run a Server
 createServer(process.argv[2]);
