@@ -59,9 +59,9 @@ const commands = {
       if (Query.checkUserExist(username)) {
         session.username = username;
         session.isConnected = false;
-        socket.write("200 successful identification\r\n");
+        sendMessage(socket, "200 successful identification");
       } else {
-        socket.write("532 Need account for login\r\n");
+        sendMessage(socket, "532 Need account for login");
       }
     },
   },
@@ -73,14 +73,17 @@ const commands = {
     invoke: (socket, param, session) => {
       const password = param.trim();
       if (!session.username) {
-        socket.write("401 Please identify your account before logging in\r\n");
+        sendMessage(
+          socket,
+          "401 Please identify your account before logging in"
+        );
       } else {
         if (Auth.login(session.username, password)) {
           session.isConnected = true;
-          socket.write("200 Successfuly connected\r\n");
+          sendMessage(socket, "200 Successfuly connected");
         } else {
           session.isConnected = false;
-          socket.write("403 Access denied, the password is incorrect\r\n");
+          sendMessage(socket, "403 Access denied, the password is incorrect");
         }
       }
     },
@@ -88,19 +91,19 @@ const commands = {
   LIST: {
     name: "LIST",
     requireParam: false,
-    connRequired: false,
+    connRequired: true,
     desc: "list the current directory of the server",
     invoke: (socket) => {
       const contents = fs.readdirSync(__dirname);
       contents.forEach((s) => {
-        socket.write(`${s}\r\n`);
+        sendMessage(socket, s);
       });
     },
   },
   CWD: {
     name: "CWD",
     requireParam: true,
-    connRequired: false, //! Test
+    connRequired: true, //! Test
     desc: "<directory>: change the current directory of the server",
     invoke: (socket, param) => {
       const dir = param.trim();
@@ -117,7 +120,23 @@ const commands = {
     connRequired: true,
     desc:
       "<filename>: transfer a copy of the file FILE from the server to the client",
-    invoke: (socket, param) => {},
+    invoke: (socket, param) => {
+      const istream = fs.createReadStream(path.join("./files", param));
+      socket.pipe(process.stdout);
+
+      let ostream = fs.createWriteStream(
+        path.join("./users/", "yves", "files", param)
+      );
+      istream.on("readable", function () {
+        let data;
+        while ((data = this.read())) {
+          ostream.write(data);
+        }
+      });
+      istream.on("end", function () {
+        sendMessage(socket, "Finish");
+      });
+    },
   },
   STOR: {
     name: "STOR",
@@ -142,7 +161,7 @@ const commands = {
     connRequired: false,
     desc: "send helpful information to the client",
     invoke: (socket) => {
-      socket.write(showCommands());
+      sendMessage(socket, showCommands());
     },
   },
   QUIT: {
@@ -151,7 +170,8 @@ const commands = {
     connRequired: false,
     desc: "close the connection and stop the program",
     invoke: (socket) => {
-      socket.end("Goodbye and see you soon. \r\n");
+      sendMessage(socket, "Goodbye and see you soon.");
+      socket.end();
     },
   },
 };
@@ -162,10 +182,13 @@ const createServer = (port) => {
     Session.start(socket);
     console.log("New connection");
     socket.write("Hello from server\r\n");
-
     socket.on("data", (data) => {
+      const now = new Date().toISOString();
       const [comm, params] = data.toString().split(" ");
       const command = commands[comm.trim()];
+
+      //?
+      displayReceivedMessage(`${now} - <-- ${comm}`);
 
       //? Check a command exists
       if (command) {
@@ -173,8 +196,9 @@ const createServer = (port) => {
         if (command.requireParam) {
           //? Check a parameter is defined
           if (!params) {
-            socket.write(
-              `The ${comm.trim()} command is not valid, it requires a parameter\r\n`
+            sendMessage(
+              socket,
+              `The ${comm.trim()} command is not valid, it requires a parameter`
             );
             return;
           }
@@ -186,8 +210,9 @@ const createServer = (port) => {
         if (command.connRequired) {
           //? Checks a user is connected
           if (!userSession.isConnected) {
-            socket.write(
-              `Please log in to use the ${comm.trim()} command.\r\n`
+            sendMessage(
+              socket,
+              `Please log in to use the ${comm.trim()} command.`
             );
             return;
           }
@@ -195,8 +220,9 @@ const createServer = (port) => {
         //? Invoke a command action
         command.invoke(socket, params, userSession);
       } else {
-        socket.write(
-          "Order not found, use HELP to display all commands available\r\n"
+        sendMessage(
+          socket,
+          "Order not found, use HELP to display all commands available"
         );
       }
     });
@@ -224,7 +250,15 @@ const showCommands = () => {
   return message;
 };
 
-//// console.log(Auth.login("anonymous", "anonymous"));
+const displayReceivedMessage = (message) => {
+  console.log("\x1b[33m%s\x1b[0m", message);
+};
+
+const sendMessage = (socket, message) => {
+  const now = new Date().toISOString();
+  socket.write(`${message} \r\n`);
+  console.log("\x1b[32m%s\x1b[0m", `${now} - --> ${message}`);
+};
 
 //? Create and run a Server
 createServer(process.argv[2]);
