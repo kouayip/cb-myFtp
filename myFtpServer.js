@@ -90,12 +90,14 @@ const commands = {
     requireParam: false,
     connRequired: true,
     desc: "list the current directory of the server",
+    invoke: (socket) => {},
   },
   CWD: {
     name: "CWD",
     requireParam: true,
     connRequired: true,
     desc: "<directory>: change the current directory of the server",
+    invoke: (socket, param) => {},
   },
   RETR: {
     name: "RETR",
@@ -103,6 +105,7 @@ const commands = {
     connRequired: true,
     desc:
       "<filename>: transfer a copy of the file FILE from the server to the client",
+    invoke: (socket, param) => {},
   },
   STOR: {
     name: "STOR",
@@ -110,12 +113,14 @@ const commands = {
     connRequired: true,
     desc:
       "<filename>: transfer a copy of the file FILE from the client to the server",
+    invoke: (socket, param) => {},
   },
   PWD: {
     name: "PWD",
     requireParam: false,
     connRequired: true,
     desc: "display the name of the current directory of the server",
+    invoke: (socket) => {},
   },
   HELP: {
     name: "HELP",
