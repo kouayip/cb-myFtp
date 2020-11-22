@@ -2,7 +2,7 @@
 
 const net = require("net");
 const fs = require("fs");
-const { exit } = require("process");
+const path = require("path");
 
 //? Create Database Instance
 const Query = ((database) => {
@@ -88,16 +88,28 @@ const commands = {
   LIST: {
     name: "LIST",
     requireParam: false,
-    connRequired: true,
+    connRequired: false,
     desc: "list the current directory of the server",
-    invoke: (socket) => {},
+    invoke: (socket) => {
+      const contents = fs.readdirSync(__dirname);
+      contents.forEach((s) => {
+        socket.write(`${s}\r\n`);
+      });
+    },
   },
   CWD: {
     name: "CWD",
     requireParam: true,
-    connRequired: true,
+    connRequired: false, //! Test
     desc: "<directory>: change the current directory of the server",
-    invoke: (socket, param) => {},
+    invoke: (socket, param) => {
+      const dir = param.trim();
+      fs.access(dir, (err) => {
+        if (err) {
+          console.log(`Directory ${err ? "does not exist" : "exists"}`);
+        }
+      });
+    },
   },
   RETR: {
     name: "RETR",
@@ -120,7 +132,9 @@ const commands = {
     requireParam: false,
     connRequired: true,
     desc: "display the name of the current directory of the server",
-    invoke: (socket) => {},
+    invoke: (socket) => {
+      socket.write(__dirname);
+    },
   },
   HELP: {
     name: "HELP",
